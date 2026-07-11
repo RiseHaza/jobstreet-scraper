@@ -1,267 +1,182 @@
-[Jobstreet Scraper](https://apify.com/blackfalcondata/jobstreet-scraper?fpr=data)
+[Jobstreet Scraper](https://apify.com/unfenced-group/jobstreet-scraper?fpr=data)
 
-## What does JobStreet Scraper do?
+# JobStreet Scraper
 
-JobStreet Scraper extracts structured job data from [jobstreet.com](https://www.jobstreet.com) across Malaysia (`my.jobstreet.com`), Singapore (`sg.jobstreet.com`), Indonesia (`id.jobstreet.com`), and the Philippines (`ph.jobstreet.com`) — including salary data, contact details, company metadata, and full descriptions. It supports keyword search, location filters, and controllable result limits, so you can run the same query consistently over time.
+![JobStreet Scraper](https://images.apifyusercontent.com/e5VvzJ-EV7Tn1Ydejud7GZSliB0cRE_ma0yRO00vRzQ/w:1800/cb:1/aHR0cHM6Ly9pLmltZ3VyLmNvbS9FTHR5RmRPLnBuZw.webp)
 
-**New to Apify?** [Sign up free](https://console.apify.com/sign-up?fpr=1h3gvi) and use the included $5 monthly platform credit to test this actor.
+Extract job listings from **JobStreet** — Southeast Asia's leading job platform — across **Singapore, Malaysia, Philippines, and Indonesia**. Get structured data including job titles, companies, locations, salary ranges, work arrangements, and full descriptions. No API key required.
 
-## Key features
+---
 
-- **Four-market coverage** — one actor covers all JobStreet markets: MY, SG, ID, and PH.
-- **Incremental mode** — recurring runs emit and charge only for listings that are new or whose tracked content changed. First run builds the baseline state; subsequent runs emit only new or changed records.
-- **Detail enrichment** — full descriptions, company metadata, and contact information where the source provides them.
-- **Compact mode** — AI-agent and MCP-friendly payloads with core fields only.
+## 🌏 Markets covered
 
-## What data can you extract from jobstreet.com?
+| Country | Code | Active listings |
+| --- | --- | --- |
+| Singapore | `SG` | ~65,000+ |
+| Malaysia | `MY` | ~35,000+ |
+| Philippines | `PH` | ~45,000+ |
+| Indonesia | `ID` | ~10,000+ |
 
-Each result includes Core listing fields (`jobId`, `seekJobId`, `title`, `canonicalUrl`, `advertiserId`, `location`, `locationCountry`, and `locationState`, and more), detail fields when enrichment is enabled (`roleId`, `description`, `descriptionHtml`, `descriptionMarkdown`, and `descriptionLength`), contact and apply information (`phoneNumber`, `applyUrl`, and `extractedEmails`), and company metadata (`company`, `companyUrl`, `companyIndustry`, and `companySize`). In standard mode, all fields are always present — unavailable data points are returned as `null`, never omitted. In compact mode, only core fields are returned.
+---
 
-Enable `includeDetails` in the input to fetch the detail fields.
+## ✨ Features
 
-## Input
+- **Keyword + location search** — find jobs by role, skill, or discipline combined with any city or region
+- **Work type filter** — Full time, Part time, Contract/Temp, Casual/Vacation
+- **Date filter** — restrict results to listings posted within 1, 7, 30, or any number of days
+- **Full job descriptions** — optional fetch of complete HTML descriptions (plain text + Markdown also provided)
+- **Structured salary data** — parsed min/max amount, currency, and period from salary labels
+- **Job categories** — filter by SEEK classification ID for precise industry targeting
+- **Deduplication** — 90-day repost cache per country; set `skipReposts: true` to receive only new listings on repeat runs
+- **Direct URL mode** — provide specific JobStreet job page URLs to fetch those listings directly
+- **Self-healing** — automatic failure detection and health signal written after every run
+- **Max results cap** — precise spend control; only successfully retrieved listings are charged
 
-The main inputs are a search keyword, an optional location filter, and a result limit. Additional filters and options are available in the input schema.
+---
 
-Key parameters:
+## 📥 Input parameters
 
-- **`query`** — Job search keywords. Use JSON array for multi-query.
-- **`country`** — Which JobStreet market to search. (default: `"MY"`)
-- **`location`** — City, state, or region. Use JSON array for multi-location.
-- **`startUrls`** — Direct search or job detail URLs.
-- **`maxResults`** — Maximum total job listings to return (0 = unlimited). (default: `25`)
-- **`maxPages`** — Maximum SERP pages to scrape per search source. (default: `5`)
-- **`sortMode`** — Sort results by relevance or date.
-- **`dateRange`** — Filter jobs posted within a time range (e.g. '1', '3', '7', '14', '31').
-- **`workType`** — Filter by work type code (e.g. '242' for Full Time on JobStreet).
-- **`workArrangement`** — Filter by work arrangement code (e.g. '2' for Remote).
-- **`classification`** — Filter by job classification/category code (e.g. '6281' for IT).
-- **`subClassification`** — Filter by job sub-classification code (e.g. '6287' for Developers/Programmers under IT).
-- ...and 11 more parameters
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `country` | string | Market: `SG`, `MY`, `PH`, `ID` (default: `SG`) |
+| `searchQuery` | string | Keywords, job title, or skill |
+| `location` | string | City or region (e.g. `Singapore`, `Kuala Lumpur`) |
+| `workType` | string | `Full time`, `Part time`, `Contract/Temp`, `Casual/Vacation` |
+| `classificationId` | integer | SEEK category ID for industry filtering |
+| `daysOld` | integer | Only return listings posted within N days |
+| `maxResults` | integer | Maximum listings to retrieve (default: 200) |
+| `fetchDetails` | boolean | Fetch full HTML description (default: false) |
+| `skipReposts` | boolean | Skip listings seen in previous runs (default: false) |
+| `startUrls` | array | Direct job page URLs to fetch instead of searching |
 
-### Input examples
-
-**Basic search** — Keyword-driven search with a result cap.
-
-→ Full payload per result — all standard fields populated where the source provides them.
-
-```
-{
-  "query": "software engineer",
-  "maxResults": 50
-}
-```
-
-**Incremental tracking** — Only emit jobs that changed since the previous run with this `stateKey`.
-
-→ First run builds the baseline state. Subsequent runs emit only records that are new or whose tracked content changed. Set `emitUnchanged: true` to include unchanged records as well.
+### Example input
 
 ```
 {
-  "query": "software engineer",
-  "maxResults": 200,
-  "incrementalMode": true,
-  "stateKey": "software-engineer-tracker"
+    "country": "SG",
+    "searchQuery": "software engineer",
+    "location": "Singapore",
+    "workType": "Full time",
+    "daysOld": 7,
+    "maxResults": 500,
+    "fetchDetails": true,
+    "skipReposts": false
 }
 ```
 
-**Compact output for AI agents** — Return only core fields for AI-agent and MCP workflows.
+---
 
-→ Small payload with the most important fields — ideal for piping into LLMs without token overhead.
+## 📤 Output schema
+
+Each result contains the following fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Unique listing ID |
+| `url` | string | Direct link to the job listing |
+| `title` | string | Job title |
+| `company` | string | Employer name |
+| `companyUrl` | string | Company profile page |
+| `location` | string | Location label |
+| `country` | string | ISO country code (SG / MY / PH / ID) |
+| `workTypes` | array | Employment type(s) |
+| `workArrangement` | string | On-site / Hybrid / Remote |
+| `salaryLabel` | string | Salary as displayed on the platform |
+| `salaryMin` | number | Parsed minimum salary |
+| `salaryMax` | number | Parsed maximum salary |
+| `salaryCurrency` | string | Currency code (SGD, MYR, PHP, IDR) |
+| `salaryPeriod` | string | HOUR / MONTH / YEAR |
+| `classifications` | array | Job categories (e.g. `ICT › Developers/Programmers`) |
+| `teaser` | string | Short listing summary |
+| `bulletPoints` | array | Highlighted selling points (sponsored listings only) |
+| `isFeatured` | boolean | Sponsored/featured listing flag |
+| `isExpired` | boolean | Whether the listing has expired |
+| `publishDateISO` | string | Listing date (ISO 8601) |
+| `descriptionHtml` | string | Full HTML description (`fetchDetails: true`) |
+| `descriptionText` | string | Plain text description (`fetchDetails: true`) |
+| `descriptionMarkdown` | string | Markdown description (`fetchDetails: true`) |
+| `isRepost` | boolean | Seen in a previous run |
+| `source` | string | Source domain |
+| `scrapedAt` | string | Scrape timestamp (ISO 8601) |
+| `contentHash` | string | 16-char change-detection fingerprint |
+
+### Example output record
 
 ```
 {
-  "query": "software engineer",
-  "maxResults": 50,
-  "compact": true
+    "id": "91694036",
+    "url": "https://sg.jobstreet.com/job/91694036",
+    "title": "Software Engineer",
+    "company": "Acme Technologies Pte Ltd",
+    "location": "Singapore",
+    "country": "SG",
+    "workTypes": ["Full time"],
+    "workArrangement": "Hybrid",
+    "salaryLabel": "$5,500 – $8,000 per month",
+    "salaryMin": 5500,
+    "salaryMax": 8000,
+    "salaryCurrency": "SGD",
+    "salaryPeriod": "MONTH",
+    "classifications": ["Information & Communication Technology › Developers/Programmers"],
+    "teaser": "Join our growing engineering team...",
+    "isFeatured": false,
+    "isExpired": false,
+    "publishDateISO": "2026-04-22T08:14:00Z",
+    "descriptionHtml": null,
+    "descriptionText": null,
+    "descriptionMarkdown": null,
+    "isRepost": false,
+    "source": "sg.jobstreet.com",
+    "scrapedAt": "2026-04-23T10:00:00.000Z",
+    "contentHash": "a3f1c8d92e047b51"
 }
 ```
 
-## Output
+---
 
-Each run produces a dataset of structured job records. Results can be downloaded as JSON, CSV, or Excel from the Dataset tab in Apify Console.
+## 💰 Pricing
 
-### Example job record
+**$0.99 per 1,000 results** — you only pay for successfully retrieved listings.
+Failed retries and filtered reposts are never charged.
 
-```
-{
-  "jobId": "485469726b257aa48bceebec68c9213bdf9a52e7ba3595af9158237164ad24c0",
-  "seekJobId": "91247023",
-  "title": "Associate Software Engineer (0-2 years)",
-  "canonicalUrl": "https://my.jobstreet.com/job/91247023",
-  "company": "Software International Corporation (M) Sdn Bhd",
-  "companyUrl": "https://my.jobstreet.com/companies/software-international-corporation-168553406415897",
-  "advertiserId": "60627682",
-  "location": "Kuala Lumpur, Malaysia",
-  "locationCountry": "MY",
-  "locationState": "Kuala Lumpur",
-  "locationSuburb": null,
-  "locationPostcode": null,
-  "salaryText": null,
-  "salaryMin": null,
-  "salaryMax": null,
-  "salaryCurrency": "MYR",
-  "salaryType": null,
-  "employmentType": "Full time",
-  "workArrangement": "hybrid",
-  "category": "Information & Communication Technology",
-  "subCategory": "Developers/Programmers",
-  "roleId": "software-engineer",
-  "teaser": "Gain proficiency in tools, programming, work closely with seniors. Prep docs, analyze problems, gather data, resolve issues in dev collaboration.",
-  "bulletPoints": [
-    "Hybrid Working Mode",
-    "Generous Annual Leave",
-    "Annual Performance Bonus, Increment, Individual Expenses Benefits"
-  ],
-  "description": "Responsibilities:\n\nParticipate in enterprise application development and maintenance for large corporations both within Malaysia and Worldwide.\n\n·       Develop knowledge and expertise in the applicat...",
-  "descriptionHtml": "<p><strong>Responsibilities:</strong></p><p>Participate in enterprise application development and maintenance for large corporations both within Malaysia and Worldwide.</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;...",
-  "descriptionMarkdown": "**Responsibilities:**\n\nParticipate in enterprise application development and maintenance for large corporations both within Malaysia and Worldwide.\n\n· Develop knowledge and expertise in the applicatio...",
-  "descriptionLength": 2044,
-  "contentQuality": "full",
-  "companyIndustry": "Computer Software & Networking",
-  "companySize": "101-1,000 employees",
-  "companyWebsite": "http://www.sicmsb.com",
-  "phoneNumber": null,
-  "screeningQuestions": [
-    "How would you rate your English language skills?",
-    "Which of the following types of qualifications do you have?",
-    "How many years' experience do you have as a software engineer?",
-    "Which of the following statements best describes your right to work in Malaysia?",
-    "Which of the following front end development libraries and frameworks are you proficient in?",
-    "What's your expected monthly basic salary?",
-    "Which of the following programming languages are you experienced in?",
-    "Which of the following languages are you fluent in?"
-  ],
-  "applyUrl": "https://www.seek.com.au/job/91247023?tracking=SHR-WEB-SharedJob-anz-1",
-  "postedDate": "2026-03-31T01:42:31.188Z",
-  "validThrough": "2026-04-30T13:59:59.999Z",
-  "contentHash": "dd34696968c2eb237697635c81982afa76418d985a7862da891ca6466965bb96",
-  "isSponsored": false,
-  "sourceUrl": "https://my.jobstreet.com/job/91247023",
-  "sourceCountry": "MY",
-  "sourceDomain": "my.jobstreet.com",
-  "searchQuery": "software engineer",
-  "searchUrl": "https://www.seek.com.au/jobs?keywords=software+engineer&where=Malaysia",
-  "scrapedAt": "2026-04-18T07:47:12.494Z",
-  "fetchedAt": "2026-04-18T07:47:12.494Z",
-  "detailFetched": true,
-  "extractedEmails": [],
-  "changeType": "NEW",
-  "trackedHash": "dd34696968c2eb237697635c81982afa76418d985a7862da891ca6466965bb96",
-  "firstSeenAt": "2026-04-18T07:47:12.494Z",
-  "lastSeenAt": "2026-04-18T07:47:12.494Z",
-  "previousSeenAt": null,
-  "expiredAt": null,
-  "stateKey": "live-verify-1776498430631",
-  "isRepost": false,
-  "repostOfId": null,
-  "repostDetectedAt": null
-}
-```
+| Results | Cost |
+| --- | --- |
+| 100 | ~$0.10 |
+| 1,000 | ~$0.99 |
+| 10,000 | ~$9.90 |
+| 100,000 | ~$99.00 |
 
-### Incremental fields
+> Flat-rate alternatives typically charge $29–$49/month regardless of usage.
 
-When `incremental: true`, each record also carries:
+Use the **Max results** cap in the input to control your spend exactly.
 
-- `changeType` — one of `NEW`, `UPDATED`, `UNCHANGED`, `REAPPEARED`, `EXPIRED`. Default output covers `NEW` / `UPDATED` / `REAPPEARED`; set `emitUnchanged: true` or `emitExpired: true` to opt into the others.
-- `firstSeenAt`, `lastSeenAt` — ISO-8601 timestamps tracking the listing across runs.
-- `isRepost`, `repostOfId`, `repostDetectedAt` — populated when a new listing matches the tracked content of a previously expired one. Set `skipReposts: true` to drop detected reposts from the output.
+---
 
-## How to scrape jobstreet.com
+## ⚠️ Known limitations
 
-1. Go to [JobStreet Scraper](https://apify.com/blackfalcondata/jobstreet-scraper?fpr=1h3gvi) in Apify Console.
-2. Enter a search keyword and optional location filter.
-3. Set `maxResults` to control how many results you need.
-4. Enable `includeDetails` if you need full descriptions, contact info, or company data.
-5. Click **Start** and wait for the run to finish.
-6. Export the dataset as JSON, CSV, or Excel.
+- **`applyUrl` not available** — JobStreet does not expose direct application URLs; the listing URL is the entry point.
+- **Salary is often null** — many listings in PH and ID do not display salary information; `salaryMin` / `salaryMax` will be null for those.
+- **`bulletPoints` sparse** — only sponsored/premium listings include highlight bullet points.
+- **`workArrangement`** — not available when using `startUrls` mode (list-page only field).
+- **HK / TH not supported** — those markets use a different platform architecture and are not covered by this actor.
+- **Max 10,000 results per search** — the platform caps paginated results at 100 pages × 100 items. Use multiple targeted keyword+location runs for larger extractions.
 
-## Use cases
+---
 
-- Extract job data from jobstreet.com for market research and competitive analysis.
-- Track salary trends across regions and categories over time.
-- Monitor new and changed listings on scheduled runs without processing the full dataset every time.
-- Build outreach lists using contact details and apply URLs from listings.
-- Research company hiring patterns, employer profiles, and industry distribution.
-- Feed structured data into AI agents, MCP tools, and automated pipelines using compact mode.
-- Export clean, structured data to dashboards, spreadsheets, or data warehouses.
+## Technical details
 
-## How much does it cost to scrape jobstreet.com?
+- **Source:** jobstreet.com — Southeast Asia's leading job platform
+- **Memory:** 256 MB
+- **Repost storage:** KeyValueStore `jobstreet-{country}-job-dedup`, 90-day TTL per market
+- **Retry:** Automatic retry on network errors, exponential backoff, 3 attempts per request
 
-JobStreet Scraper uses [pay-per-event](https://apify.com/pricing?fpr=1h3gvi) pricing. You pay a small fee when the run starts and then for each result that is actually produced.
+---
 
-- **Run start:** $0.01 per run
-- **Per result:** $0.002 per job record
+## Additional services
 
-Example costs:
+Need a custom actor, additional filters, scheduled runs, or integration support?
+Send an email to [info@unfencedgroup.nl](mailto:info@unfencedgroup.nl) — we build on request.
 
-- 10 results: **$0.03**
-- 100 results: **$0.21**
-- 500 results: **$1.01**
+---
 
-### Example: recurring monitoring savings
-
-These examples compare full re-scrapes with incremental runs at different churn rates. Churn is the share of listings that are new or whose tracked content changed since the previous run. Actual churn depends on your query breadth, source activity, and polling frequency — the scenarios below are examples, not predictions.
-
-Example setup: 100 results per run, daily polling (30 runs/month). Event-pricing examples scale linearly with result count.
-
-| Churn rate | Full re-scrape run cost | Incremental run cost | Savings vs full re-scrape | Monthly cost after baseline |
-| --- | --- | --- | --- | --- |
-| 5% — stable niche query | $0.21 | $0.02 | $0.19 (90%) | $0.60 |
-| 15% — moderate broad query | $0.21 | $0.04 | $0.17 (81%) | $1.20 |
-| 30% — high-volume aggregator | $0.21 | $0.07 | $0.14 (67%) | $2.10 |
-
-Full re-scrape monthly cost at daily polling: $6.30. First month with incremental costs $0.79 / $1.37 / $2.24 for the 5% / 15% / 30% scenarios because the first run builds baseline state at full cost before incremental savings apply.
-
- 
-
-## FAQ
-
-### How many results can I get from jobstreet.com?
-
-The number of results depends on the search query and available listings on jobstreet.com. Use the `maxResults` parameter to control how many results are returned per run.
-
-### Does JobStreet Scraper support recurring monitoring?
-
-Yes. Enable incremental mode to only receive new or changed listings on subsequent runs. This is ideal for scheduled monitoring where you want to track changes over time without re-processing the full dataset.
-
-### Can I integrate JobStreet Scraper with other apps?
-
-Yes. JobStreet Scraper works with Apify's [integrations](https://apify.com/integrations?fpr=1h3gvi) to connect with tools like Zapier, Make, Google Sheets, Slack, and more. You can also use webhooks to trigger actions when a run completes.
-
-### Can I use JobStreet Scraper with the Apify API?
-
-Yes. You can start runs, manage inputs, and retrieve results programmatically through the Apify API. Client libraries are available for JavaScript, Python, and other languages.
-
-### Can I use JobStreet Scraper through an MCP Server?
-
-Yes. Apify provides an [MCP Server](https://apify.com/apify/actors-mcp-server?fpr=1h3gvi) that lets AI assistants and agents call this actor directly. Use compact mode and `descriptionMaxLength` to keep payloads manageable for LLM context windows.
-
-### Is it legal to scrape jobstreet.com?
-
-This actor extracts publicly available data from jobstreet.com. Web scraping of public information is generally considered legal, but you should always review the target site's terms of service and ensure your use case complies with applicable laws and regulations, including GDPR where relevant.
-
-### Your feedback
-
-If you have questions, need a feature, or found a bug, please [open an issue](https://apify.com/blackfalcondata/jobstreet-scraper/issues?fpr=1h3gvi) on the actor's page in Apify Console. Your feedback helps us improve.
-
-## You might also like
-
-- [Adzuna Job Scraper](https://apify.com/blackfalcondata/adzuna-scraper?fpr=1h3gvi) — Scrape adzuna.com - the global job board with 20+ country markets. Structured salary.
-- [APEC.fr Scraper - French Executive Jobs](https://apify.com/blackfalcondata/apec-scraper?fpr=1h3gvi) — Scrape apec.fr - French executive job listings with salary ranges, company, location, skills,.
-- [Arbeitsagentur Scraper - German Jobs](https://apify.com/blackfalcondata/arbeitsagentur-scraper?fpr=1h3gvi) — Scrape arbeitsagentur.de - Germany’s official employment portal with 1M+ listings. Contact data,.
-- [AutoScout24 Scraper](https://apify.com/blackfalcondata/autoscout24-scraper?fpr=1h3gvi) — Scrape autoscout24.com - Europe's largest used car marketplace with 770K+ listings. Structured.
-- [Bayt.com Scraper - Jobs from the Middle East](https://apify.com/blackfalcondata/bayt-scraper?fpr=1h3gvi) — Scrape bayt.com - the leading Middle East job board. Salary data, experience requirements.
-- [Bilbasen Scraper - Denmark’s Car Marketplace](https://apify.com/blackfalcondata/bilbasen-scraper?fpr=1h3gvi) — Scrape bilbasen.dk - Denmark’s largest car marketplace. Full vehicle specifications, seller.
-- [Bumeran Scraper](https://apify.com/blackfalcondata/bumeran-scraper?fpr=1h3gvi) — Scrape bumeran.com.ar - the largest job board across 8 LATAM countries. Work modality, contract.
-- [Cadremploi Job Scraper](https://apify.com/blackfalcondata/cadremploi-scraper?fpr=1h3gvi) — Scrape cadremploi.fr - French management and executive jobs. Salary ranges, apply links.
-
-## Getting started with Apify
-
-New to Apify? [Create a free account with $5 credit](https://console.apify.com/sign-up?fpr=1h3gvi) — no credit card required.
-
-1. Sign up — $5 platform credit included
-2. Open this actor and configure your input
-3. Click **Start** — export results as JSON, CSV, or Excel
-
-Need more later? [See Apify pricing](https://apify.com/pricing?fpr=1h3gvi).
+*Built by [unfenced-group](https://apify.com/unfenced-group) · Issues? Open a ticket or send a message.*
